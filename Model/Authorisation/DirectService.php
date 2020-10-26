@@ -82,10 +82,24 @@ class DirectService extends \Magento\Framework\DataObject
             $this->_handle3Ds2($threeDSecureChallengeParams, $directOrderParams, $orderCode, $threeDSecureConfig);
         } else {
             // Normal order goes here.(without 3DS).
+            $this->setCcLast4($mageOrder, $directResponse);
             $this->updateWorldPayPayment->create()->updateWorldpayPayment($directResponse, $payment, $disclaimerFlag);
             $this->_applyPaymentUpdate($directResponse, $payment);
         }
     }
+
+    protected function setCcLast4($mageOrder, $directResponse)
+    {
+        $responseXml = $directResponse->getXml();
+
+        if ( ! isset($responseXml->reply->orderStatus->payment->paymentMethodDetail->card['number'])) {
+            return;
+        }
+
+        $cardNumber= $responseXml->reply->orderStatus->payment->paymentMethodDetail->card['number'];
+        $mageOrder->getPayment()->setCcLast4(substr($cardNumber, -4));
+    }
+
     private function _handle3DSecure($threeDSecureParams, $directOrderParams, $mageOrderId)
     {
         $this->registryhelper->setworldpayRedirectUrl($threeDSecureParams);

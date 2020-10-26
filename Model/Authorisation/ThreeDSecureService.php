@@ -71,6 +71,7 @@ class ThreeDSecureService extends \Magento\Framework\DataObject
                 $this->checkoutSession->unsIs3DSRequest();
                 $orderIncrementId = current(explode('-', $directOrderParams['orderCode']));
                 $this->_order = $this->orderservice->getByIncrementId($orderIncrementId);
+                $this->setCcLast4($this->_order, $this->response);
                 $this->_paymentUpdate = $this->paymentservice->createPaymentUpdateFromWorldPayXml(
                     $this->response->getXml()
                 );
@@ -97,6 +98,18 @@ class ThreeDSecureService extends \Magento\Framework\DataObject
             );
             return;
         }
+    }
+
+    protected function setCcLast4($order, $directResponse)
+    {
+        $responseXml = $directResponse->getXml();
+
+        if ( ! isset($responseXml->reply->orderStatus->payment->paymentMethodDetail->card['number'])) {
+            return;
+        }
+
+        $cardNumber= $responseXml->reply->orderStatus->payment->paymentMethodDetail->card['number'];
+        $order->getPayment()->setCcLast4(substr($cardNumber, -4))->save();
     }
 
     /**
